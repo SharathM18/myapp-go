@@ -1,0 +1,32 @@
+# Git history and local Git configuration from the Docker build context
+.git/
+.gitignore
+
+# Local environment files containing secrets
+.env
+.env.*
+!.env.sample
+
+# Local IDE and code editor settings
+.idea/
+.vscode/
+
+# macOS Finder metadata files
+.DS_Store
+
+# Locally compiled Go binaries and generated build artifacts
+/bin/
+/build/
+/dist/
+/tmp/
+tmp/
+*.exe
+*.test
+
+# Test and coverage reports
+coverage.txt
+coverage.out
+coverage.html
+
+# Local logs
+*.log

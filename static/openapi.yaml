@@ -1,0 +1,25 @@
+openapi: 3.0.3
+info:
+  version: 1.0.0
+  title: Myapp REST API - Documentation
+  description: Myapp REST API - Documentation
+servers:
+  - url: http://localhost:8080
+    description: Local Server
+paths:
+  /api/v1/health:
+    get:
+      summary: Health check endpoint
+      responses:
+        "200":
+          description: Successful response
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    x-service-token:
+      type: apiKey
+      name: x-service-token
+      in: header

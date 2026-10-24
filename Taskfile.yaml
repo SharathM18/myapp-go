@@ -1,0 +1,114 @@
+version: "3"
+
+# Automatically load variables from the local environment file
+dotenv:
+  - .env
+
+# Shared variables used by development tasks
+vars:
+  MYAPP_DATABASE_DSN: '{{.MYAPP_DATABASE__DSN | default ""}}'
+
+tasks:
+  help:
+    desc: Display available development tasks
+    cmds:
+      - task --list-all
+    silent: true
+
+  run api:
+    desc: Run the API Server
+    silent: true
+    cmds:
+      - echo 'Running the api server...'
+      - go run ./cmd/api
+
+  run worker:
+    desc: Run the Worker Server
+    silent: true
+    cmds:
+      - echo 'Running the worker server...'
+      - go run ./cmd/worker
+
+  build api:
+    desc: Build the API binary
+    silent: true
+    cmds:
+      - echo 'Building API binary...'
+      - go build -o bin/api ./cmd/api
+
+  build worker:
+    desc: Build the Worker binary
+    silent: true
+    cmds:
+      - echo 'Building Worker binary...'
+      - go build -o bin/worker ./cmd/worker
+
+  build:
+    desc: Build both API and Worker binaries
+    silent: true
+    cmds:
+      - task: build api
+      - task: build worker
+      - echo 'All binaries built successfully.'
+
+  test:
+    desc: Run all tests
+    silent: true
+    cmds:
+      - echo 'Running the tests...'
+      - go test ./...
+
+  tidy:
+    desc: Format all .go files, and Tidy and verify Go module dependencies
+    silent: true
+    cmds:
+      - echo 'Formatting .go files...'
+      - go fmt ./...
+      - echo 'Tidying module dependencies...'
+      - go mod tidy
+      - echo 'Verifying dependencies...'
+      - go mod verify
+
+  confirm:
+    desc: Confirm a potentially risky operation
+    internal: true
+    silent: true
+    cmds:
+      - |
+        printf 'Are you sure you want to continue? [y/N] '
+        read -r answer
+        case "$answer" in
+          y|Y) ;;
+          *) printf 'Cancelled.\n'; exit 1 ;;
+        esac
+
+  migrations:new:
+    desc: Create a database migration
+    vars:
+      NAME: '{{.name | default ""}}'
+    cmds:
+      - |
+        if [ -z "{{.NAME}}" ]; then
+          printf 'Error: migration name is required.\n'
+          printf 'Usage: task migrations:new name=create_tasks_table\n'
+          exit 1
+        fi
+
+        # Restrict names to letters, numbers, and underscores.
+        case "{{.NAME}}" in
+          *[!a-zA-Z0-9_]*)
+            printf 'Error: use only letters, numbers, and underscores.\n'
+            exit 1
+            ;;
+        esac
+
+        printf 'Creating migration file for %s...\n' "{{.NAME}}"
+        go run github.com/jackc/tern/v2@latest new -m ./internal/database/migrations "{{.NAME}}"
+
+  migrations:up:
+    desc: Apply all pending up database migrations
+    silent: true
+    cmds:
+      - task: confirm
+      - echo 'Running up migrations...'
+      - go run github.com/jackc/tern/v2@latest migrate -m ./internal/database/migrations --conn-string "{{.MYAPP_DATABASE_DSN}}"
