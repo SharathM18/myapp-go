@@ -82,6 +82,7 @@ func New(cfg *config.Config, logger *zerolog.Logger) (*Database, error) {
 
 	// 5. Setup OpenTelemetry Tracer
 	// otelpgx automatically references Trace ID, Parent Span ID, and creates a new Span ID, and also add label automatically
+	// otelpgx automatically creates child spans (SpanKindClient) named after the operation (e.g., "SELECT users") and attaches standard OpenTelemetry attributes (db.system, db.name, db.statement, db.user, net.peer.name, net.peer.port) to the active context.
 	otelTracer := otelpgx.NewTracer()
 
 	// 6. Setup Zerolog SQL query tracer

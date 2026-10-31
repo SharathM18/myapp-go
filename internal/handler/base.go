@@ -15,11 +15,11 @@ import (
 
 // Handler provides base functionality for all handlers
 type Handler struct {
-	server *server.Server
+	server *server.APIServer
 }
 
 // NewHandler creates a new base handler
-func NewHandler(s *server.Server) Handler {
+func NewHandler(s *server.APIServer) Handler {
 	return Handler{server: s}
 }
 

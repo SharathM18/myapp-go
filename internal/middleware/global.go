@@ -13,10 +13,10 @@ import (
 )
 
 type GlobalMiddlewares struct {
-	server *server.Server
+	server *server.APIServer
 }
 
-func NewGlobalMiddlewares(s *server.Server) *GlobalMiddlewares {
+func NewGlobalMiddlewares(s *server.APIServer) *GlobalMiddlewares {
 	return &GlobalMiddlewares{
 		server: s,
 	}
@@ -36,8 +36,8 @@ func (global *GlobalMiddlewares) Recover() echo.MiddlewareFunc {
 	return middleware.Recover()
 }
 
+// Capture while the handler is executing (latency, status, path, method, etc.) using echo's built-in RequestLogger middleware, and then log it using Zerolog with trace_id and request_id from context.
 func (global *GlobalMiddlewares) RequestLogger() echo.MiddlewareFunc {
-	// Capture while the handler is executing (latency, status, path, method, etc.)
 	return middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:     true,
 		LogStatus:  true,
@@ -59,8 +59,7 @@ func (global *GlobalMiddlewares) RequestLogger() echo.MiddlewareFunc {
 				}
 			}
 
-			// Pulls the pre-configured Zerolog logger from context (built earlier by ContextEnhancer),
-			// which already contains trace_id and span_id.
+			// Pulls the pre-configured Zerolog logger from context (built earlier by ContextEnhancer), which already contains trace_id and span_id.
 			logger := GetLogger(c)
 			var e *zerolog.Event
 
@@ -71,10 +70,6 @@ func (global *GlobalMiddlewares) RequestLogger() echo.MiddlewareFunc {
 				e = logger.Warn()
 			default:
 				e = logger.Info()
-			}
-
-			if requestID := GetRequestID(c); requestID != "" {
-				e = e.Str("request_id", requestID)
 			}
 
 			if userID := GetUserID(c); userID != "" {

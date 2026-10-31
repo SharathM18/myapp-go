@@ -29,7 +29,7 @@ func NewClient(cfg *config.Config, logger *zerolog.Logger) *Client {
 	return &Client{
 		client: asynq.NewClient(redisOpt),
 		logger: logger,
-		tracer: otel.Tracer("task.producer"), // Use the package names if nested then use . delimeter
+		tracer: otel.Tracer("task.producer"), // Represents which Go package or library generated the trace, and Use the package names if nested then use . delimeter
 	}
 }
 

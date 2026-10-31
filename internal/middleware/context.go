@@ -16,21 +16,18 @@ const (
 )
 
 type ContextEnhancer struct {
-	server *server.Server
+	server *server.APIServer
 }
 
-func NewContextEnhancer(s *server.Server) *ContextEnhancer {
+func NewContextEnhancer(s *server.APIServer) *ContextEnhancer {
 	return &ContextEnhancer{server: s}
 }
 
 func (ce *ContextEnhancer) EnhanceContext() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			requestID := GetRequestID(c)
-
 			// 1. Build base request logger with metadata
 			contextLogger := ce.server.Logger.With().
-				Str("request_id", requestID).
 				Str("method", c.Request().Method).
 				Str("path", c.Path()).
 				Str("ip", c.RealIP()).
@@ -68,6 +65,25 @@ func (ce *ContextEnhancer) EnhanceContext() echo.MiddlewareFunc {
 	}
 }
 
+// +---------------------------------------------------------+
+// | OUTER BOX (Created by your ContextEnhancer)             |
+// | Holds: Zerolog Logger                                   |
+// |                                                         |
+// |    +-----------------------------------------------+    |
+// |    | MIDDLE BOX (Created by OTel Middleware)       |    |
+// |    | Holds: Trace ID & Span ID                     |    |
+// |    |                                               |    |
+// |    |    +-------------------------------------+    |    |
+// |    |    | INNER BOX (Created by Go itself)    |    |    |
+// |    |    | Holds: Base HTTP Request Data       |    |    |
+// |    |    +-------------------------------------+    |    |
+// |    +-----------------------------------------------+    |
+// +---------------------------------------------------------+
+// How data is retrieved:
+// When your database package runs trace.SpanFromContext(ctx), it knocks on the Outer Box and asks, "Do you have a Trace ID?"
+// The Outer Box says, "No, I only have a Logger. Let me open the box inside me."
+// It asks the Middle Box, which says, "Yes, I have it. Here you go."
+
 func (ce *ContextEnhancer) extractUserID(c echo.Context) string {
 	if userID, ok := c.Get(UserIDKey).(string); ok && userID != "" {
 		return userID
@@ -87,6 +103,13 @@ func (ce *ContextEnhancer) extractUserRole(c echo.Context) string {
 func GetUserID(c echo.Context) string {
 	if userID, ok := c.Get(UserIDKey).(string); ok {
 		return userID
+	}
+	return ""
+}
+
+func GetUserRole(c echo.Context) string {
+	if userRole, ok := c.Get(UserRoleKey).(string); ok {
+		return userRole
 	}
 	return ""
 }

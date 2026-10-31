@@ -70,7 +70,7 @@ type IntegrationConfig struct {
 }
 
 type EmailIntegrationConfig struct {
-	EmailAPIKey string `koanf:"email_api_key" validate:"required"`
+	EmailAPIKey string `koanf:"api_key" validate:"required"`
 }
 
 // ObservabilityConfig

@@ -15,7 +15,7 @@ type HealthHandler struct {
 	Handler
 }
 
-func NewHealthHandler(s *server.Server) *HealthHandler {
+func NewHealthHandler(s *server.APIServer) *HealthHandler {
 	return &HealthHandler{
 		Handler: NewHandler(s),
 	}
@@ -42,7 +42,7 @@ func (h *HealthHandler) CheckHealth(c echo.Context) error {
 	defer cancel()
 
 	dbStart := time.Now()
-	if err := h.server.DB.Pool.Ping(ctx); err != nil {
+	if err := h.server.Database.Pool.Ping(ctx); err != nil {
 		checks["database"] = map[string]interface{}{
 			"status":        "unhealthy",
 			"response_time": time.Since(dbStart).String(),
@@ -61,7 +61,7 @@ func (h *HealthHandler) CheckHealth(c echo.Context) error {
 	// 2. Check Redis connectivity
 	if h.server.Redis != nil {
 		redisStart := time.Now()
-		if err := h.server.Redis.Ping(ctx).Err(); err != nil {
+		if err := h.server.Redis.Client.Ping(ctx).Err(); err != nil {
 			checks["redis"] = map[string]interface{}{
 				"status":        "unhealthy",
 				"response_time": time.Since(redisStart).String(),

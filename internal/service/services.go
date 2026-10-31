@@ -7,6 +7,6 @@ import (
 
 type Services struct{}
 
-func NewServices(s *server.Server, repos *repository.Repositories) (*Services, error) {
+func NewServices(s *server.APIServer, repos *repository.Repositories) (*Services, error) {
 	return &Services{}, nil
 }

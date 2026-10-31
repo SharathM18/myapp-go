@@ -10,7 +10,7 @@ type Handlers struct {
 	OpenAPI *OpenAPIHandler
 }
 
-func NewHandlers(s *server.Server, services *service.Services) *Handlers {
+func NewHandlers(s *server.APIServer, services *service.Services) *Handlers {
 	return &Handlers{
 		Health:  NewHealthHandler(s),
 		OpenAPI: NewOpenAPIHandler(s),

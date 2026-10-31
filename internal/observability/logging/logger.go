@@ -11,7 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/tracelog"
 	"github.com/rs/zerolog"
 	"github.com/sharathm18/myapp/internal/config"
-	"go.opentelemetry.io/contrib/bridges/otelzerolog"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -45,10 +44,10 @@ func NewLogger(cfg *config.Config) *zerolog.Logger {
 
 	// 4. Attach OpenTelemetry Hook if OTel Logs are enabled via configuration
 	// This intercepts all logger calls and forwards them to the OTel LoggerProvider
-	if cfg.Observability.OTel.Enabled && cfg.Observability.OTel.LogsEnabled {
-		otelHook := otelzerolog.NewHook()
-		logger = logger.Hook(otelHook)
-	}
+	// if cfg.Observability.OTel.Enabled && cfg.Observability.OTel.LogsEnabled {
+	// 	otelHook := otelzerolog.NewHook(cfg.Observability.OTel.ServiceName)
+	// 	logger = logger.Hook(otelHook)
+	// }
 
 	logger.Info().
 		Str("level", cfg.Observability.Logging.Level).

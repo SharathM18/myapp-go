@@ -11,6 +11,7 @@ import (
 	"github.com/sharathm18/myapp/internal/task/email"
 )
 
+// WorkerServer acts as the central core dependency Injection container for the Workers.
 type WorkerServer struct {
 	Config     *config.Config
 	Logger     *zerolog.Logger

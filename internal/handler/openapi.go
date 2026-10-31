@@ -13,7 +13,7 @@ type OpenAPIHandler struct {
 	Handler
 }
 
-func NewOpenAPIHandler(s *server.Server) *OpenAPIHandler {
+func NewOpenAPIHandler(s *server.APIServer) *OpenAPIHandler {
 	return &OpenAPIHandler{
 		Handler: NewHandler(s),
 	}

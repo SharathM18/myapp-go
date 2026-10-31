@@ -4,7 +4,7 @@ import (
 	"github.com/sharathm18/myapp/internal/server"
 )
 
-type Middlewares struct {
+type HTTPMiddlewares struct {
 	Global          *GlobalMiddlewares
 	Auth            *AuthMiddleware
 	ContextEnhancer *ContextEnhancer
@@ -12,8 +12,8 @@ type Middlewares struct {
 	RateLimit       *RateLimitMiddleware
 }
 
-func NewMiddlewares(s *server.Server) *Middlewares {
-	return &Middlewares{
+func NewHTTPMiddlewares(s *server.APIServer) *HTTPMiddlewares {
+	return &HTTPMiddlewares{
 		Global:          NewGlobalMiddlewares(s),
 		Auth:            NewAuthMiddleware(s),
 		ContextEnhancer: NewContextEnhancer(s),

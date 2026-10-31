@@ -14,7 +14,7 @@ import (
 	"github.com/sharathm18/myapp/internal/task"
 )
 
-// APIServer acts as the central Dependency Injection container for the HTTP API.
+// APIServer acts as the central core dependency Injection container for the HTTP API.
 type APIServer struct {
 	Config     *config.Config
 	Logger     *zerolog.Logger

@@ -11,10 +11,10 @@ import (
 )
 
 type TracingMiddleware struct {
-	server *server.Server
+	server *server.APIServer
 }
 
-func NewTracingMiddleware(s *server.Server) *TracingMiddleware {
+func NewTracingMiddleware(s *server.APIServer) *TracingMiddleware {
 	return &TracingMiddleware{
 		server: s,
 	}
@@ -29,13 +29,13 @@ func (tm *TracingMiddleware) OTelMiddleware() echo.MiddlewareFunc {
 		}
 	}
 
-	// If headers exists Trace ID, it reuses that Trace ID to continue the distributed trace.
+	// In headers Trace ID exists, it reuses that Trace ID to continue the distributed trace.
 	// If no headers exist, it generates a brand-new Trace ID and root Span ID.
 	// it stores it inside Go's standard Context
 	return otelecho.Middleware(tm.server.Config.Observability.OTel.ServiceName)
 }
 
-// EnhanceTracing by extracing span id from Go context and attaches custom request metadata and errors to active OTel spans
+// EnhanceTracing by extracing span ID from Go context and attaches custom request metadata and errors to active OTel spans
 func (tm *TracingMiddleware) EnhanceTracing() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -45,18 +45,20 @@ func (tm *TracingMiddleware) EnhanceTracing() echo.MiddlewareFunc {
 			if span.IsRecording() {
 				span.SetAttributes(
 					attribute.String("http.real_ip", c.RealIP()),
-					attribute.String("http.user_agent", req.UserAgent()),
+					// UserAgent is already captured by OTel middleware, so no need to duplicate
 				)
 
-				// Add Request ID if present
-				if requestID := GetRequestID(c); requestID != "" {
-					span.SetAttributes(attribute.String("request.id", requestID))
-				}
-
-				// Add User Context if present
+				// Add User ID from echo context to otel span if present
 				if userID := c.Get("user_id"); userID != nil {
 					if userIDStr, ok := userID.(string); ok {
 						span.SetAttributes(attribute.String("user.id", userIDStr))
+					}
+				}
+
+				// Add User Role from echo context to otel span if present
+				if userRole := c.Get("user_role"); userRole != nil {
+					if userRoleStr, ok := userRole.(string); ok {
+						span.SetAttributes(attribute.String("user.role", userRoleStr))
 					}
 				}
 			}
@@ -78,3 +80,22 @@ func (tm *TracingMiddleware) EnhanceTracing() echo.MiddlewareFunc {
 		}
 	}
 }
+
+// +---------------------------------------------------------+
+// | OUTER BOX (Created by your ContextEnhancer)             |
+// | Holds: Zerolog Logger                                   |
+// |                                                         |
+// |    +-----------------------------------------------+    |
+// |    | MIDDLE BOX (Created by OTel Middleware)       |    |
+// |    | Holds: Trace ID & Span ID                     |    |
+// |    |                                               |    |
+// |    |    +-------------------------------------+    |    |
+// |    |    | INNER BOX (Created by Go itself)    |    |    |
+// |    |    | Holds: Base HTTP Request Data       |    |    |
+// |    |    +-------------------------------------+    |    |
+// |    +-----------------------------------------------+    |
+// +---------------------------------------------------------+
+// How data is retrieved:
+// When your database package runs trace.SpanFromContext(ctx), it knocks on the Outer Box and asks, "Do you have a Trace ID?"
+// The Outer Box says, "No, I only have a Logger. Let me open the box inside me."
+// It asks the Middle Box, which says, "Yes, I have it. Here you go."

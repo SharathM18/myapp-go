@@ -30,7 +30,7 @@ func NewEmailHandler(cfg *config.Config, logger *zerolog.Logger) *EmailHandler {
 		config:      cfg,
 		emailClient: resend.NewClient(cfg.Integration.Email.EmailAPIKey),
 		logger:      logger,
-		tracer:      otel.Tracer("task.email.consumer"), // Use the package names if nested then use . delimeter
+		tracer:      otel.Tracer("task.email.consumer"), // Represents which Go package or library generated the trace, and Use the package names if nested then use . delimeter
 	}
 }
 
@@ -81,7 +81,7 @@ func (h *EmailHandler) HandleWelcomeEmailTask(ctx context.Context, t *asynq.Task
 		Msg("Processing welcome email task")
 
 	// 6. Execute actual Email Logic
-	err := h.emailClient.SendWelcome(ctx, payload.To, payload.Name)
+	err := h.SendWelcome(ctx, payload.To, payload.Name)
 	if err != nil {
 		span.RecordError(err) // Attach error to the trace timeline
 
@@ -92,4 +92,14 @@ func (h *EmailHandler) HandleWelcomeEmailTask(ctx context.Context, t *asynq.Task
 
 	log.Info().Msg("Welcome email sent successfully")
 	return nil
+}
+
+func (h *EmailHandler) SendWelcome(ctx context.Context, to string, name string) error {
+	_, err := h.emailClient.Emails.Send(&resend.SendEmailRequest{
+		From:    "onboarding@resend.dev",
+		To:      []string{to},
+		Subject: "Welcome!",
+		Text:    fmt.Sprintf("Welcome, %s!", name),
+	})
+	return err
 }
