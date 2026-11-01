@@ -1,24 +1,16 @@
-## Architecture Overview
+#### Main components of Backend
 
-This backend follows clean architecture principles with clear separation of concerns:
+1. PostgresSQL DB with connection pool and index
+2. Redis cache
+3. OpenTelemetry with trace, metrics, or logs collector
+4. Logging
+5. Asynq for background tasks and Asynqmon for monitoring
+6. Apache Kafka for distributed event streaming
+7. Agents/ deamon to collects the logs or metrics
 
-```
-backend/
-├── cmd/myapp/                # Application entry point
-├── internal/                 # Private application code
-│   ├── config/               # Configuration management
-│   ├── database/             # Database connections and migrations
-│   ├── handler/              # HTTP request handlers
-│   ├── service/              # Business logic layer
-│   ├── repository/           # Data access layer
-│   ├── model/                # Domain models
-│   ├── middleware/           # HTTP middleware
-│   ├── lib/                  # Shared libraries
-│   └── validation/           # Request validation
-├── static/                   # Static files (OpenAPI spec)
-├── templates/                # Email templates
-└── Taskfile.yml              # Task automation
-```
+#### Tips
+
+1.
 
 ## Configuration
 
@@ -46,35 +38,9 @@ task migrations:up           # Apply migrations
 go mod init github.com/<your-account>/myapp
 ```
 
-## Install and verify the Taskfile pkg
+## Install and Verify the Taskfile locally
 
 ```bash
 brew install go-task/tap/go-task
 task --version
-```
-
-# install deps
-
-```
-go get github.com/knadh/koanf/v2
-go get github.com/knadh/koanf/providers/env/v2
-go get github.com/knadh/koanf/parsers/dotenv
-go get github.com/go-playground/validator/v10
-
-go get github.com/rs/zerolog
-go get go.opentelemetry.io/otel
-go get go.opentelemetry.io/otel/sdk/trace
-go get go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc
-go get go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp
-go get go.opentelemetry.io/otel/sdk/resource
-go get go.opentelemetry.io/otel/semconv/v1.24.0
-
-
-go get github.com/jackc/pgx/v5
-
-
-go get github.com/jackc/pgx/v5
-go get github.com/jackc/pgx/v5/pgxpool
-go get github.com/exaring/otelpgx
-go get github.com/jackc/pgx-zerolog
 ```

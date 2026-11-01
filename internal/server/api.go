@@ -54,7 +54,7 @@ func NewAPIServer(cfg *config.Config, logger *zerolog.Logger) (*APIServer, error
 // Setup the HTTP Server
 func (s *APIServer) SetupHTTPServer(handler http.Handler) {
 	s.HTTPServer = &http.Server{
-		Addr:         string(s.Config.Server.Port),
+		Addr:         fmt.Sprintf(":%d", s.Config.Server.Port),
 		Handler:      handler,
 		ReadTimeout:  time.Duration(s.Config.Server.ReadTimeout) * time.Second,
 		WriteTimeout: time.Duration(s.Config.Server.WriteTimeout) * time.Second,

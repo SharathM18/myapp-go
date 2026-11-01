@@ -6,13 +6,15 @@ import (
 )
 
 type Handlers struct {
-	Health  *HealthHandler
-	OpenAPI *OpenAPIHandler
+	Health   *HealthHandler
+	OpenAPI  *OpenAPIHandler
+	AsynqMon *AsynqMonHandler
 }
 
 func NewHandlers(s *server.APIServer, services *service.Services) *Handlers {
 	return &Handlers{
-		Health:  NewHealthHandler(s),
-		OpenAPI: NewOpenAPIHandler(s),
+		Health:   NewHealthHandler(s),
+		OpenAPI:  NewOpenAPIHandler(s),
+		AsynqMon: NewAsynqMonHandler(s),
 	}
 }

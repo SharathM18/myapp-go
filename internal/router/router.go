@@ -52,7 +52,7 @@ func NewRouter(s *server.APIServer, h *handler.Handlers, services *service.Servi
 
 		// MIDDLEWARE: Authentication
 		// Reads Authorization header, validates JWT, and adds user_id and user_role to Echo context for downstream handlers and services.
-		middlewares.Auth.RequireAuthentication(),
+		// middlewares.Auth.RequireAuthentication(),
 
 		// MIDDLEWARE: Trace Attribute Enhancer
 		// Reads User ID, User Role, UserAgent and IP from Echo Context, and attaches them as OTel span attributes.

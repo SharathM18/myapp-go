@@ -26,8 +26,15 @@ func NewClient(cfg *config.Config, logger *zerolog.Logger) *Client {
 		Addr: cfg.Redis.Address, // Ensure this matches your config struct
 	}
 
+	client := asynq.NewClient(redisOpt)
+
+	logger.Info().
+		Str("address", cfg.Redis.Address).
+		Int("db", cfg.Redis.Database).
+		Msg("Successfully connected task producer client")
+
 	return &Client{
-		client: asynq.NewClient(redisOpt),
+		client: client,
 		logger: logger,
 		tracer: otel.Tracer("task.producer"), // Represents which Go package or library generated the trace, and Use the package names if nested then use . delimeter
 	}

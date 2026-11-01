@@ -18,4 +18,7 @@ func registerSystemRoutes(e *echo.Echo, h *handler.Handlers) {
 
 	// Serve the static directory
 	e.Static("/static", "static")
+
+	// Asynqmon Web UI, and Use e.Any because Asynqmon uses GET, POST, DELETE for queue management
+	e.Any("/admin/asynqmon*", h.AsynqMon.ServeAsynqMon)
 }
