@@ -1,16 +1,11 @@
 version: "3"
 
-# Automatically load variables from the local environment file
-dotenv:
-  - .env
-
-# Shared variables used by development tasks
 vars:
   MYAPP_DATABASE_DSN: '{{.MYAPP_DATABASE__DSN | default ""}}'
 
 tasks:
   help:
-    desc: Display available development tasks
+    desc: Display available tasks
     cmds:
       - task --list-all
     silent: true
@@ -49,7 +44,7 @@ tasks:
     cmds:
       - task: build-api
       - task: build-worker
-      - echo 'All binaries built successfully.'
+      - echo 'All binaries built successfully...'
 
   test:
     desc: Run all tests
@@ -64,7 +59,7 @@ tasks:
     cmds:
       - echo 'Formatting .go files...'
       - go fmt ./...
-      - echo 'Tidying module dependencies...'
+      - echo 'Downloads missing dependencies and cleans up unused entries in go.mod and go.sum'
       - go mod tidy
       - echo 'Verifying dependencies...'
       - go mod verify
@@ -83,7 +78,8 @@ tasks:
         esac
 
   migrations:new:
-    desc: Create a database migration
+    desc: Create a new database migration file
+    silent: true
     vars:
       NAME: '{{.name | default ""}}'
     cmds:
@@ -102,13 +98,29 @@ tasks:
             ;;
         esac
 
-        printf 'Creating migration file for %s...\n' "{{.NAME}}"
-        go run github.com/jackc/tern/v2@latest new -m ./internal/database/migrations "{{.NAME}}"
+        printf 'Creating migration files for %s...\n' "{{.NAME}}"
+        # golang-migrate creates a timestamped pair (.up.sql and .down.sql)
+        mkdir -p ./internal/infrastructure/database/postgres/migrations
+        go run -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest create -ext sql -dir ./internal/infrastructure/database/postgres/migrations "{{.NAME}}"
 
   migrations:up:
     desc: Apply all pending up database migrations
     silent: true
     cmds:
       - task: confirm
-      - echo 'Running up migrations...'
-      - go run github.com/jackc/tern/v2@latest migrate -m ./internal/database/migrations --conn-string "{{.MYAPP_DATABASE_DSN}}"
+      - echo 'Running up migrations against database...'
+      - go run -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest -path ./internal/infrastructure/database/postgres/migrations -database "{{.MYAPP_DATABASE_DSN}}" up
+
+  migrations:down:
+    desc: Rollback the last migration
+    silent: true
+    cmds:
+      - task: confirm
+      - echo 'Rolling back last migration...'
+      - go run -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest -path ./internal/infrastructure/database/postgres/migrations -database "{{.MYAPP_DATABASE_DSN}}" down 1
+
+  migrations:version:
+    desc: Check current database migration version
+    silent: true
+    cmds:
+      - go run -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest -path ./internal/infrastructure/database/postgres/migrations -database "{{.MYAPP_DATABASE_DSN}}" version

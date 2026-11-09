@@ -2,23 +2,30 @@ package router
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/sharathm18/myapp/internal/handler"
+	"github.com/labstack/echo/v4/middleware"
+	"github.com/sharathm18/myapp/internal/domain/system"
+	"github.com/sharathm18/myapp/internal/server"
 )
 
-func registerSystemRoutes(e *echo.Echo, h *handler.Handlers) {
-	// Prometheus scraping endpoint (always enabled by default)
-	e.GET("/metrics", echo.WrapHandler(promhttp.Handler()))
+// groups system domain handlers
+type SystemHandlers struct {
+	Health   *system.HealthHandler
+	Metrics  *system.MetricsHandler
+	AsynqMon *system.AsynqMonHandler
+}
 
-	// Health check endpoint
-	e.GET("/health", h.Health.CheckHealth)
+func NewSystemRouter(sysSrv *server.System, h SystemHandlers) *echo.Echo {
+	systemRouter := echo.New()
 
-	// Serve the OpenAPI HTML page at /docs
-	e.GET("/docs", h.OpenAPI.ServeOpenAPIUI)
+	// Always add Recover middleware so a panic in a handler doesn't crash the whole app
+	systemRouter.Use(middleware.Recover())
 
-	// Serve the static directory
-	e.Static("/static", "static")
+	// Mount the routes
+	systemRouter.GET("/health", h.Health.CheckHealth)
 
-	// Asynqmon Web UI, and Use e.Any because Asynqmon uses GET, POST, DELETE for queue management
-	e.Any("/admin/asynqmon*", h.AsynqMon.ServeAsynqMon)
+	// secure := systemRouter.Group("/admin", middleware.BasicAuth(...))
+	// secure.GET("/metrics", h.Metrics.HandleMetrics)
+	// secure.Any("/asynqmon*", h.AsynqMon.ServeAsynqMon)
+
+	return systemRouter
 }

@@ -1,16 +1,14 @@
-#### Main components of Backend
+### Main components of Backend
 
-1. PostgresSQL DB with connection pool and index
-2. Redis cache
-3. OpenTelemetry with trace, metrics, or logs collector
-4. Logging
-5. Asynq for background tasks and Asynqmon for monitoring
-6. Apache Kafka for distributed event streaming
-7. Agents/ deamon to collects the logs or metrics
-
-#### Tips
-
-1.
+- Config management
+- Application server startup and shutdown gracefully
+- PostgresSQL DB with Connection pool, index, and migrations
+- Redis cache
+- OpenTelemetry with trace, metrics, or logs collector
+- Logging
+- Asynq for background tasksqueue and Asynqmon for monitoring
+- Apache Kafka for distributed event streaming
+- Agents/ deamon to collects the logs or metrics
 
 ## Configuration
 
@@ -18,29 +16,46 @@ Configuration is managed through environment variables with the `MYAPP_` prefix:
 
 ## Development
 
-### Available Tasks
-
-```bash
-task help                    # Show all available tasks
-task run                     # Run the application
-task build                   # Build the application
-task test                    # Run tests
-task tidy                    # Format and tidy dependencies
-task migrations:new name=X   # Create new migration
-task migrations:up           # Apply migrations
-```
-
-# Initial Steps
-
-## Generates the go.mod
-
-```bash
-go mod init github.com/<your-account>/myapp
-```
-
-## Install and Verify the Taskfile locally
+### Install and Verify the Taskfile locally
 
 ```bash
 brew install go-task/tap/go-task
 task --version
 ```
+
+### Available Tasks
+
+```bash
+$ task help
+
+task: Available tasks for this project:
+* build:                    Build both API and Worker binaries
+* build-api:                Build the API binary
+* build-worker:             Build the Worker binary
+* help:                     Display available tasks
+* run-api:                  Run the API Server
+* run-worker:               Run the Worker Server
+* test:                     Run all tests
+* tidy:                     Format all .go files, and Tidy and verify Go module dependencies
+* migrations:down:          Rollback the last migration
+* migrations:new:           Create a new database migration file
+* migrations:up:            Apply all pending up database migrations
+* migrations:version:       Check current database migration version
+```
+
+### Go Commands
+
+| Commands                                      | Description                                                                                            |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `go mod init github.com/<your-account>/myapp` | Generates the go.mod                                                                                   |
+| `go mod tidy`                                 | Downloads missing dependencies and cleans up unused entries in go.mod and go.sum                       |
+| `go fmt ./...`                                | Automatically formats all Go files in your project according to official Go style guidelines.          |
+| `go vet ./...`                                | Examines your code and reports suspicious constructs (like printf formatting mistakes or mutex locks). |
+| `go run cmd/api/main.go`                      | Compiles your code into a temporary directory in memory and executes it immediately.                   |
+| `go build -o bin/api cmd/api/main.go`         | Compiles your source code into a standalone executable binary saved at bin/api.                        |
+| `go clean -modcache`                          | Delete all Go modules downloaded on your entire machine                                                |
+
+pending
+err
+sqlerr
+validator

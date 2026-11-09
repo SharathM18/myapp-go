@@ -13,28 +13,38 @@ import (
 	"github.com/knadh/koanf/v2"
 )
 
-// Config represents the root application configuration structure.
+// root application configs
 type Config struct {
 	Primary       PrimaryConfig       `koanf:"primary"`
-	Server        ServerConfig        `koanf:"server"`
+	AppServer     AppServerConfig     `koanf:"app_server"`
+	SystemServer  SystemServerConfig  `koanf:"system_server"`
 	Database      DatabaseConfig      `koanf:"database"`
 	Redis         RedisConfig         `koanf:"redis"`
+	Worker        WorkerConfig        `koanf:"worker"`
 	Auth          AuthConfig          `koanf:"auth"`
-	Integration   IntegrationConfig   `koanf:"integration"`
-	Task          TaskConfig          `koanf:"task"`
 	Observability ObservabilityConfig `koanf:"observability"`
+	Integration   IntegrationConfig   `koanf:"integration"`
 }
 
 type PrimaryConfig struct {
-	Env string `koanf:"env" validate:"required,oneof=local development staging production"`
+	Env         string `koanf:"env" validate:"required,oneof=local development staging production"`
+	ServiceName string `koanf:"service_name" validate:"required"`
 }
 
-type ServerConfig struct {
+type AppServerConfig struct {
 	Port               int           `koanf:"port" validate:"required,min=1,max=65535"`
 	ReadTimeout        time.Duration `koanf:"read_timeout" validate:"required,gt=0"`
 	WriteTimeout       time.Duration `koanf:"write_timeout" validate:"required,gt=0"`
 	IdleTimeout        time.Duration `koanf:"idle_timeout" validate:"required,gt=0"`
 	CORSAllowedOrigins []string      `koanf:"cors_allowed_origins" validate:"required"`
+}
+
+type SystemServerConfig struct {
+	Port         int           `koanf:"port" validate:"required,min=1,max=65535"`
+	ReadTimeout  time.Duration `koanf:"read_timeout" validate:"required,gt=0"`
+	WriteTimeout time.Duration `koanf:"write_timeout" validate:"required,gt=0"`
+	IdleTimeout  time.Duration `koanf:"idle_timeout" validate:"required,gt=0"`
+	// System Server doesn't need CORS
 }
 
 type DatabaseConfig struct {
@@ -56,28 +66,18 @@ type RedisConfig struct {
 	Database int    `koanf:"database" validate:"required"`
 }
 
+type WorkerConfig struct {
+	Concurrency int `koanf:"concurrency" validate:"required,gt=0"`
+}
+
 type AuthConfig struct {
 	SecretKey string `koanf:"secret_key" validate:"required,min=32"`
 }
 
-type TaskConfig struct {
-	Concurrency int `koanf:"concurrency" validate:"required,gt=0"`
-}
-
-// IntegrationConfig
-type IntegrationConfig struct {
-	Email EmailIntegrationConfig `koanf:"email"`
-}
-
-type EmailIntegrationConfig struct {
-	EmailAPIKey string `koanf:"api_key" validate:"required"`
-}
-
-// ObservabilityConfig
+// observability configs
 type ObservabilityConfig struct {
-	Logging      LoggingConfig      `koanf:"logging"`
-	OTel         OTelConfig         `koanf:"otel"`
-	HealthChecks HealthChecksConfig `koanf:"health_checks"`
+	Logging LoggingConfig `koanf:"logging"`
+	OTel    OTelConfig    `koanf:"otel"`
 }
 
 type LoggingConfig struct {
@@ -104,26 +104,27 @@ type OTelConfig struct {
 	TracesSamplingRatio float64       `koanf:"traces_sampling_ratio" validate:"required_if=Enabled true,gte=0,lte=1"`
 }
 
-type HealthChecksConfig struct {
-	Enabled  bool          `koanf:"enabled"`
-	Interval time.Duration `koanf:"interval" validate:"required_if=Enabled true,omitempty,gt=0"`
-	Timeout  time.Duration `koanf:"timeout" validate:"required_if=Enabled true,omitempty,gt=0"`
-	Checks   []string      `koanf:"checks" validate:"required_if=Enabled true,omitempty"`
+// external integration configs
+type IntegrationConfig struct {
+	Email EmailIntegrationConfig `koanf:"email"`
 }
 
-// LoadConfig loads application configuration from environment variables and an optional .env file.
+type EmailIntegrationConfig struct {
+	EmailAPIKey string `koanf:"api_key" validate:"required"`
+}
+
+// loads the config from environment variables and an optional .env file
 func LoadConfig() (*Config, error) {
 	k := koanf.New(".")
 
-	// 1. If a local .env file exists, load its variables directly into the OS process environment.
-	// In production (Docker/K8s), this file won't exist, so it fails silently and safely.
+	// 1. if a local .env file exists, load its variables directly into the OS process environment
 	if _, err := os.Stat(".env"); err == nil {
 		if err := godotenv.Load(".env"); err != nil {
 			return nil, fmt.Errorf("failed to load .env file into environment: %w", err)
 		}
 	}
 
-	// 2. Load live OS environment variables (using env/v2 provider) to overlay production values
+	// 2. load live OS environment variables
 	err := k.Load(env.Provider(".", env.Opt{
 		Prefix: "MYAPP_",
 		TransformFunc: func(k, v string) (string, any) {
@@ -138,15 +139,15 @@ func LoadConfig() (*Config, error) {
 
 	var cfg Config
 
-	// 3. Define decode hooks using the maintained v2 mapstructure package
-	// Environment variables are ALWAYS strings ("15s", "30").
-	// Go structs often need specific types like time.Duration.
-	// This hook intercepts string values during unmarshaling and parses them into time.Duration.
+	// 3. define decode hooks using the maintained v2 mapstructure package
+	// environment variables are ALWAYS strings ("15s", "30")
+	// Go structs often need specific types like time.Duration
+	// this hook intercepts string values during unmarshaling and parses them into time.Duration.
 	decodeHook := mapstructure.ComposeDecodeHookFunc(
 		mapstructure.StringToTimeDurationHookFunc(),
 	)
 
-	// 4. Unmarshal configuration with koanf.UnmarshalConf and custom DecoderConfig
+	// 4. unmarshal configuration with koanf.UnmarshalConf and custom DecoderConfig
 	if err := k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{
 		Tag: "koanf",
 		DecoderConfig: &mapstructure.DecoderConfig{
@@ -158,8 +159,8 @@ func LoadConfig() (*Config, error) {
 		return nil, fmt.Errorf("failed to unmarshal configuration: %w", err)
 	}
 
-	// 5. Validate configuration using go-playground/validator
-	// This checks all rules like validate:"required" or validate:"oneof=..."
+	// 5. validate configuration using go-playground/validator
+	// this checks all rules like validate:"required" or validate:"oneof=..."
 	// ensuring the app fails fast on startup if anything is missing or misconfigured.
 	validate := validator.New()
 	if err := validate.Struct(&cfg); err != nil {
@@ -169,7 +170,8 @@ func LoadConfig() (*Config, error) {
 	return &cfg, nil
 }
 
-// Config Utils functions
+// config Utils functions
+
 func (cfg *ObservabilityConfig) IsProduction() bool {
 	return cfg.OTel.Environment == "production"
 }

@@ -14,8 +14,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/sharathm18/myapp/internal/config"
-	"github.com/sharathm18/myapp/internal/observability/logging"
-	"github.com/sharathm18/myapp/internal/observability/telemetry"
+	"github.com/sharathm18/myapp/internal/infrastructure/observability/logging"
+	"github.com/sharathm18/myapp/internal/infrastructure/observability/telemetry"
 )
 
 type EmailHandler struct {
@@ -30,43 +30,42 @@ func NewEmailHandler(cfg *config.Config, logger *zerolog.Logger) *EmailHandler {
 		config:      cfg,
 		emailClient: resend.NewClient(cfg.Integration.Email.EmailAPIKey),
 		logger:      logger,
-		tracer:      otel.Tracer("task.email.consumer"), // Represents which Go package or library generated the trace, and Use the package names if nested then use . delimeter
+		tracer:      otel.Tracer("task.email.consumer"), // represents which Go package or library generated the trace, and Use the package names if nested then use . delimeter
 	}
 }
 
 // HandleWelcomeEmailTask executes the actual background task
 func (h *EmailHandler) HandleWelcomeEmailTask(ctx context.Context, t *asynq.Task) error {
-	// 1. Unmarshal the JSON payload from Redis
+	// 1. unmarshal the JSON payload from Redis
 	var payload WelcomeEmailPayload
 	if err := json.Unmarshal(t.Payload(), &payload); err != nil {
 		return fmt.Errorf("failed to unmarshal payload: %w", err)
 	}
 
-	// 2. Extract the HTTP Trace Context natively from Asynq Headers
+	// 2. extract the HTTP Trace Context natively from asynq headers
 	ctx = otel.GetTextMapPropagator().Extract(ctx, propagation.MapCarrier(t.Headers()))
 
-	// 3. Use the reusable wrapper. This automatically handles Trace ID, Parent Span ID linking, and
-	// Child Span ID creations for consumer
+	// 3. use the reusable wrapper. this automatically handles trace id, parent span id linking, and child span id creations for consumer
 	ctx, span := telemetry.StartConsumerSpan(ctx, h.tracer, telemetry.WorkloadTask, t.Type())
 	defer span.End()
 
-	// 4. Extract Asynq lifecycle metadata
+	// 4. extract asynq lifecycle metadata
 	retries, _ := asynq.GetRetryCount(ctx)
 	maxRetries, _ := asynq.GetMaxRetry(ctx)
 	queue, _ := asynq.GetQueueName(ctx)
 
-	// 5. Attach live task attributes
+	// 5. attach live task attributes
 	span.SetAttributes(
 		attribute.String("messaging.message.id", t.ResultWriter().TaskID()), // task_a8f9c2...
 		attribute.String("task.type", t.Type()),                             // email:welcome
 		attribute.String("asynq.queue", queue),                              // critical, default, low
 
-		// Business attributes
+		// business attributes
 		attribute.String("email.to", payload.To),
 		attribute.String("email.name", payload.Name),
 	)
 
-	// 5. Setup Logger with the newly generated Context
+	// 5. setup logger with the newly generated context
 	log := logging.WithTraceContext(ctx, *h.logger).With().
 		Str("task_id", t.ResultWriter().TaskID()). // task_a8f9c2...
 		Str("task_type", t.Type()).                // email:welcome
@@ -75,22 +74,28 @@ func (h *EmailHandler) HandleWelcomeEmailTask(ctx context.Context, t *asynq.Task
 		Int("max_retries", maxRetries).
 		Logger()
 
-	// Now this log automatically includes task_id, queue, and attempt
+	// now this log automatically includes task_id, queue, and attempt
 	log.Info().
 		Str("to", payload.To).
-		Msg("Processing welcome email task")
+		Msg("processing welcome email task")
 
-	// 6. Execute actual Email Logic
+	// 6. execute actual email Logic
 	err := h.SendWelcome(ctx, payload.To, payload.Name)
 	if err != nil {
-		span.RecordError(err) // Attach error to the trace timeline
+		span.RecordError(err) // attach error to the trace timeline
 
-		// This error log will now also automatically include the task_id and attempt count!
-		log.Error().Err(err).Msg("Failed to send welcome email")
-		return err // Returning an error forces Asynq to trigger an automatic retry
+		// put transient retry as a Warn log and permanent death for Error log
+		if retries+1 >= maxRetries {
+			log.Error().Err(err).Msg("permanently failed to send welcome email task and will move to DLQ")
+		} else {
+			log.Warn().Err(err).Msg("failed to send welcome email task, will retry")
+		}
+
+		// returning an error forces Asynq to trigger an automatic retry
+		return fmt.Errorf("failed to send welcome email task: %w", err)
 	}
 
-	log.Info().Msg("Welcome email sent successfully")
+	log.Info().Msg("welcome email sent successfully")
 	return nil
 }
 

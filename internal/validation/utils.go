@@ -3,8 +3,8 @@ package validation
 import (
 	"fmt"
 	"reflect"
-	"regexp"
 	"strings"
+	"uuid"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
@@ -107,8 +107,7 @@ func extractValidationErrors(err error) (string, []errs.FieldError) {
 	return "Validation failed", fieldErrors
 }
 
-var uuidRegex = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
-
-func IsValidUUID(uuid string) bool {
-	return uuidRegex.MatchString(uuid)
+func IsValidUUID(u string) bool {
+	_, err := uuid.Parse(u)
+	return err == nil
 }
