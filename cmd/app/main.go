@@ -114,15 +114,15 @@ func run() error {
 	appHandlers := router.AppHandlers{}
 
 	// 6.2. system domains
-	healthHandler := system.NewHealthHandler(sysSrv)
-	metricsHandler := system.NewMetricsHandler(sysSrv)
+	healthHandler := system.NewHealthHandler(sysSrv, appSrv)
 	asynqMonHandler := system.NewAsynqMonHandler(sysSrv)
+	infoHandler := system.NewInfoHandler(sysSrv)
 
 	// groups system domain handlers
 	sysHandlers := router.SystemHandlers{
 		Health:   healthHandler,
-		Metrics:  metricsHandler,
 		AsynqMon: asynqMonHandler,
+		Info:     infoHandler,
 	}
 
 	// 7. instantiate Servers & Attach Routers
@@ -154,6 +154,7 @@ func run() error {
 	case <-ctx.Done():
 		logger.Info().Msg("shutdown signal received")
 
+	// If EITHER server crashes, it triggers a full shutdown
 	case err := <-serverErrs:
 		if err != nil {
 			logger.Error().Err(err).Msg("a server component failed abruptly, triggering full shutdown")

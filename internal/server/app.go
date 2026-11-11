@@ -92,13 +92,13 @@ func (s *APP) SetupHTTPServer(handler http.Handler) {
 
 // start HTTP server
 func (s *APP) Start() error {
-	if err := s.HTTPServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		return fmt.Errorf("failed to start app http server: %w", err)
-	}
-
 	s.Logger.Info().
 		Int("port", s.Config.AppServer.Port).
 		Msg("starting app http server...")
+
+	if err := s.HTTPServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		return fmt.Errorf("failed to start app http server: %w", err)
+	}
 
 	return nil
 }

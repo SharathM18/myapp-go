@@ -19,7 +19,8 @@ type Config struct {
 	AppServer     AppServerConfig     `koanf:"app_server"`
 	SystemServer  SystemServerConfig  `koanf:"system_server"`
 	Database      DatabaseConfig      `koanf:"database"`
-	Redis         RedisConfig         `koanf:"redis"`
+	RedisCache    RedisCacheConfig    `koanf:"redis_cache"`
+	RedisAsynq    RedisAsynqConfig    `koanf:"redis_asynq"`
 	Worker        WorkerConfig        `koanf:"worker"`
 	Auth          AuthConfig          `koanf:"auth"`
 	Observability ObservabilityConfig `koanf:"observability"`
@@ -60,10 +61,19 @@ type DatabaseConfig struct {
 	ConnMaxIdleTime time.Duration `koanf:"conn_max_idle_time" validate:"required,gt=0"`
 }
 
-type RedisConfig struct {
+type RedisCacheConfig struct {
+	Address      string `koanf:"address" validate:"required"`
+	Password     string `koanf:"password" validate:"required"`
+	Database     int    `koanf:"database" validate:"gte=0,lte=15"`
+	PoolSize     int    `koanf:"pool_size" validate:"required,gt=0"`
+	MinIdleConns int    `koanf:"min_idle_conns" validate:"gte=0"`
+}
+
+// Asynq manages its own pool internally, so we just need the connection details
+type RedisAsynqConfig struct {
 	Address  string `koanf:"address" validate:"required"`
 	Password string `koanf:"password" validate:"required"`
-	Database int    `koanf:"database" validate:"required"`
+	Database int    `koanf:"database" validate:"gte=0,lte=15"`
 }
 
 type WorkerConfig struct {

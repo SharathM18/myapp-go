@@ -18,9 +18,9 @@ type ConsumerClient struct {
 // it strictly pulls and executes payloads from taskqueue
 func NewConsumerClient(cfg *config.Config, logger *zerolog.Logger) (*ConsumerClient, error) {
 	redisOpt := asynq.RedisClientOpt{
-		Addr:     cfg.Redis.Address,
-		Password: cfg.Redis.Password,
-		DB:       cfg.Redis.Database,
+		Addr:     cfg.RedisAsynq.Address,
+		Password: cfg.RedisAsynq.Password,
+		DB:       cfg.RedisAsynq.Database,
 	}
 
 	workerSrv := asynq.NewServer(

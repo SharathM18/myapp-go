@@ -29,14 +29,14 @@ const TaskQueuePingTimeout = 15 * time.Second
 // client is the Producer. It strictly pushes payloads to Redis.
 func NewProducerClient(cfg *config.Config, logger *zerolog.Logger) (*ProducerClient, error) {
 	redisOpt := asynq.RedisClientOpt{
-		Addr:     cfg.Redis.Address,
-		Password: cfg.Redis.Password,
-		DB:       cfg.Redis.Database,
+		Addr:     cfg.RedisAsynq.Address,
+		Password: cfg.RedisAsynq.Password,
+		DB:       cfg.RedisAsynq.Database,
 	}
 
 	rdb, ok := redisOpt.MakeRedisClient().(redis.UniversalClient)
 	if !ok {
-		return nil, fmt.Errorf("could not create Redis client for %s", cfg.Redis.Address)
+		return nil, fmt.Errorf("could not create Redis client for %s", cfg.RedisAsynq.Address)
 	}
 	defer rdb.Close()
 
@@ -44,14 +44,14 @@ func NewProducerClient(cfg *config.Config, logger *zerolog.Logger) (*ProducerCli
 	defer cancel()
 
 	if err := rdb.Ping(ctx).Err(); err != nil {
-		return nil, fmt.Errorf("could not connect to Redis at %s: %w", cfg.Redis.Address, err)
+		return nil, fmt.Errorf("could not connect to Redis at %s: %w", cfg.RedisAsynq.Address, err)
 	}
 
 	client := asynq.NewClient(redisOpt)
 
 	logger.Info().
-		Str("address", cfg.Redis.Address).
-		Int("DB", cfg.Redis.Database).
+		Str("address", cfg.RedisAsynq.Address).
+		Int("DB", cfg.RedisAsynq.Database).
 		Msg("successfully connected task producer")
 
 	return &ProducerClient{
@@ -69,8 +69,8 @@ func (c *ProducerClient) Close() error {
 	}
 
 	c.logger.Info().
-		Str("address", c.config.Redis.Address).
-		Int("DB", c.config.Redis.Database).
+		Str("address", c.config.RedisAsynq.Address).
+		Int("DB", c.config.RedisAsynq.Database).
 		Msg("task client closed successfully")
 
 	return nil

@@ -32,8 +32,8 @@ go.work.sum
 
 # local environment files containing secrets
 .env
-.env.*
-!.env.sample
+# .env.*
+# !.env.sample
 
 # Local IDE and code editor settings
 .idea/

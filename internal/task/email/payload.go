@@ -2,10 +2,10 @@ package email
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/hibiken/asynq"
+	"github.com/vmihailenco/msgpack/v5"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 )
@@ -26,8 +26,8 @@ type WelcomeEmailPayload struct {
 
 // NewWelcomeEmailTask is called by the app http server to get a contract json payload for asynq
 func NewWelcomeEmailTask(ctx context.Context, payload WelcomeEmailPayload) (*asynq.Task, error) {
-	// serialize into JSON
-	jsonPayload, err := json.Marshal(payload)
+	// Serialize using msgpack instead of json
+	payloadBytes, err := msgpack.Marshal(payload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal welcome email payload: %w", err)
 	}
@@ -41,5 +41,5 @@ func NewWelcomeEmailTask(ctx context.Context, payload WelcomeEmailPayload) (*asy
 	otel.GetTextMapPropagator().Inject(ctx, propagation.MapCarrier(headers))
 
 	// pass the headers directly into Asynq using NewTaskWithHeaders
-	return asynq.NewTaskWithHeaders(TypeWelcomeEmail, jsonPayload, headers, asynq.MaxRetry(3)), nil
+	return asynq.NewTaskWithHeaders(TypeWelcomeEmail, payloadBytes, headers, asynq.MaxRetry(3)), nil
 }

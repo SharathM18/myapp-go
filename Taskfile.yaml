@@ -1,7 +1,7 @@
 version: "3"
 
 vars:
-  MYAPP_DATABASE_DSN: '{{.MYAPP_DATABASE__DSN | default ""}}'
+  MYAPP_DATABASE_DSN: '{{.MYAPP_DATABASE_DSN | default ""}}'
 
 tasks:
   help:
@@ -10,12 +10,12 @@ tasks:
       - task --list-all
     silent: true
 
-  run-api:
-    desc: Run the API Server
+  run-app:
+    desc: Run the APP Server
     silent: true
     cmds:
-      - echo 'Running the api server...'
-      - go run ./cmd/api
+      - echo 'Running the app server...'
+      - go run ./cmd/app
 
   run-worker:
     desc: Run the Worker Server
@@ -24,12 +24,12 @@ tasks:
       - echo 'Running the worker server...'
       - go run ./cmd/worker
 
-  build-api:
-    desc: Build the API binary
+  build-app:
+    desc: Build the APP binary
     silent: true
     cmds:
-      - echo 'Building API binary...'
-      - go build -o bin/api ./cmd/api
+      - echo 'Building APP binary...'
+      - go build -o bin/app ./cmd/app
 
   build-worker:
     desc: Build the Worker binary
@@ -39,10 +39,10 @@ tasks:
       - go build -o bin/worker ./cmd/worker
 
   build:
-    desc: Build both API and Worker binaries
+    desc: Build both App and Worker binaries
     silent: true
     cmds:
-      - task: build-api
+      - task: build-app
       - task: build-worker
       - echo 'All binaries built successfully...'
 
@@ -99,9 +99,15 @@ tasks:
         esac
 
         printf 'Creating migration files for %s...\n' "{{.NAME}}"
-        # golang-migrate creates a timestamped pair (.up.sql and .down.sql)
         mkdir -p ./internal/infrastructure/database/postgres/migrations
-        go run -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest create -ext sql -dir ./internal/infrastructure/database/postgres/migrations "{{.NAME}}"
+
+        # 1. Run golang-migrate to get the correct sequential number
+        go run -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest create -seq -ext sql -dir ./internal/infrastructure/database/postgres/migrations "{{.NAME}}"
+
+        # 2. Instantly delete the down migration file
+        rm -f ./internal/infrastructure/database/postgres/migrations/*_{{.NAME}}.down.sql
+
+        printf 'Done. Kept only the .up.sql file.\n'
 
   migrations:up:
     desc: Apply all pending up database migrations

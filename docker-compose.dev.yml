@@ -9,6 +9,19 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: myapp
+    # -----------------------------------------------------------------------
+    # POSTGRESQL TUNING POLICIES (Can be configured or removed)
+    # -----------------------------------------------------------------------
+    # - max_connections: Default is 100. Set higher if your Go pool size * instances exceeds it.
+    # - shared_buffers: Memory for caching data. Usually set to 25% of available RAM.
+    # - work_mem: Memory for complex sorts (ORDER BY, DISTINCT). Default 4MB.
+    # - effective_cache_size: Estimate of OS cache + shared_buffers. Usually 50-75% of RAM.
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=200"
+      - "-c"
+      - "shared_buffers=256MB"
     ports:
       - "5432:5432"
     volumes:
@@ -23,6 +36,30 @@ services:
     image: redis:7-alpine
     container_name: myapp-redis
     restart: unless-stopped
+    # -----------------------------------------------------------------------
+    # REDIS MEMORY POLICIES (Can be configured or removed)
+    # -----------------------------------------------------------------------
+    # maxmemory-policy determines what Redis does when RAM hits the limit.
+    # Available options:
+    # 1. volatile-lru    : Evicts least recently used keys with a TTL (BEST for Cache + Asynq).
+    # 2. allkeys-lru     : Evicts least recently used keys across the board (DO NOT USE with Asynq).
+    # 3. volatile-lfu    : Evicts least frequently used keys with a TTL.
+    # 4. allkeys-lfu     : Evicts least frequently used keys across the board.
+    # 5. volatile-ttl    : Evicts keys with the shortest time-to-live remaining.
+    # 6. volatile-random : Randomly evicts keys with a TTL.
+    # 7. allkeys-random  : Randomly evicts any key.
+    # 8. noeviction      : Returns errors when memory is full (Default).
+    #
+    # appendonly yes     : Writes every command to an Append Only File (AOF) on disk. Prevents
+    #                      losing queued Asynq jobs if the container crashes.
+    command:
+      - "redis-server"
+      - "--maxmemory"
+      - "256mb"
+      - "--maxmemory-policy"
+      - "volatile-lru"
+      - "--appendonly"
+      - "yes"
     ports:
       - "6379:6379"
     volumes:

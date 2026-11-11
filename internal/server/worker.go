@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -58,12 +59,12 @@ func NewWorker(cfg *config.Config, logger *zerolog.Logger) (*Worker, error) {
 
 // start boots up the task consumer to begin pulling tasks from asynq
 func (s *Worker) Start() error {
-	s.Logger.Info().Msg("Starting task background worker...")
+	s.Logger.Info().Msg("starting task background worker...")
 	return s.TaskWorker.Start()
 }
 
 // shutdown gracefully stops the Task worker and database
-func (s *Worker) Shutdown() error {
+func (s *Worker) Shutdown(ctx context.Context) error {
 	var shutdownErrors []error
 
 	// 1. stop taking new tasks and wait for active ones to finish

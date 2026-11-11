@@ -14,13 +14,14 @@ type AsynqMonHandler struct {
 	hmon         http.Handler
 }
 
+// Asynq manages its own pool internally, so we just need the connection details
 func NewAsynqMonHandler(sysSrv *server.System) *AsynqMonHandler {
 	hmon := asynqmon.New(asynqmon.Options{
 		RootPath: "/admin/asynqmon",
 		RedisConnOpt: asynq.RedisClientOpt{
-			Addr:     sysSrv.Config.Redis.Address,
-			Password: sysSrv.Config.Redis.Password,
-			DB:       sysSrv.Config.Redis.Database,
+			Addr:     sysSrv.Config.RedisAsynq.Address,
+			Password: sysSrv.Config.RedisAsynq.Password,
+			DB:       sysSrv.Config.RedisAsynq.Database,
 		},
 	})
 
@@ -31,6 +32,5 @@ func NewAsynqMonHandler(sysSrv *server.System) *AsynqMonHandler {
 }
 
 func (h *AsynqMonHandler) ServeAsynqMon(c echo.Context) error {
-	echo.WrapHandler(h.hmon)(c)
-	return nil
+	return echo.WrapHandler(h.hmon)(c)
 }

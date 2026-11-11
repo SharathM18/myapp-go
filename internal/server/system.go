@@ -37,13 +37,13 @@ func (s *System) SetupSystemServer(handler http.Handler) {
 }
 
 func (s *System) Start() error {
-	if err := s.HTTPServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		return fmt.Errorf("failed to start system http server: %w", err)
-	}
-
 	s.Logger.Info().
 		Int("port", s.Config.SystemServer.Port).
 		Msg("starting system http server...")
+
+	if err := s.HTTPServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		return fmt.Errorf("failed to start system http server: %w", err)
+	}
 
 	return nil
 }

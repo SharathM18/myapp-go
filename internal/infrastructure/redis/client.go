@@ -22,9 +22,17 @@ const RedisPingTimeout = 15 * time.Second
 // New initializes a Redis connection, attaches OpenTelemetry tracing, and verifies the connection.
 func NewClient(cfg *config.Config, logger *zerolog.Logger) (*Client, error) {
 	redisClient := redis.NewClient(&redis.Options{
-		Addr:     cfg.Redis.Address,
-		Password: cfg.Redis.Password,
-		DB:       cfg.Redis.Database,
+		Addr:     cfg.RedisCache.Address,
+		Password: cfg.RedisCache.Password,
+		DB:       cfg.RedisCache.Database,
+
+		// Connection Pool Settings
+		PoolSize:     cfg.RedisCache.PoolSize,     // Max active connections (default is 10 connections per CPU)
+		MinIdleConns: cfg.RedisCache.MinIdleConns, // Keep at least 2 connections open to avoid latency on sudden spikes
+		DialTimeout:  5 * time.Second,
+		ReadTimeout:  3 * time.Second,
+		WriteTimeout: 3 * time.Second,
+		PoolTimeout:  4 * time.Second, // Max time to wait if all connections are busy
 	})
 
 	// attach OpenTelemetry Hook ONLY if tracing is enabled in the configuration
@@ -42,8 +50,8 @@ func NewClient(cfg *config.Config, logger *zerolog.Logger) (*Client, error) {
 		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
 	}
 
-	logger.Info().Str("address", cfg.Redis.Address).
-		Int("DB", cfg.Redis.Database).
+	logger.Info().Str("address", cfg.RedisCache.Address).
+		Int("DB", cfg.RedisCache.Database).
 		Msg("successfully connected to Redis")
 
 	return &Client{
@@ -59,8 +67,8 @@ func (c *Client) Close() error {
 		return fmt.Errorf("failed to close redis connection: %w", err)
 	}
 
-	c.logger.Info().Str("address", c.config.Redis.Address).
-		Int("DB", c.config.Redis.Database).
+	c.logger.Info().Str("address", c.config.RedisCache.Address).
+		Int("DB", c.config.RedisCache.Database).
 		Msg("redis client connection closed successfully")
 
 	return nil

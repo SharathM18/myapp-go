@@ -2,12 +2,12 @@ package email
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/hibiken/asynq"
 	"github.com/resend/resend-go/v4"
 	"github.com/rs/zerolog"
+	"github.com/vmihailenco/msgpack/v5"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
@@ -36,9 +36,9 @@ func NewEmailHandler(cfg *config.Config, logger *zerolog.Logger) *EmailHandler {
 
 // HandleWelcomeEmailTask executes the actual background task
 func (h *EmailHandler) HandleWelcomeEmailTask(ctx context.Context, t *asynq.Task) error {
-	// 1. unmarshal the JSON payload from Redis
+	// 1. Unmarshal the raw bytes back into your Go struct using msgpack
 	var payload WelcomeEmailPayload
-	if err := json.Unmarshal(t.Payload(), &payload); err != nil {
+	if err := msgpack.Unmarshal(t.Payload(), &payload); err != nil {
 		return fmt.Errorf("failed to unmarshal payload: %w", err)
 	}
 

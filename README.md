@@ -3,7 +3,7 @@
 - Config management
 - Application server startup and shutdown gracefully
 - PostgresSQL DB with Connection pool, index, and migrations
-- Redis cache
+- Redis cache (Serialization using MessagePack (msgpack))
 - OpenTelemetry with trace, metrics, or logs collector
 - Logging
 - Asynq for background tasksqueue and Asynqmon for monitoring
@@ -29,11 +29,11 @@ task --version
 $ task help
 
 task: Available tasks for this project:
-* build:                    Build both API and Worker binaries
-* build-api:                Build the API binary
+* build:                    Build both App and Worker binaries
+* build-app:                Build the APP binary
 * build-worker:             Build the Worker binary
 * help:                     Display available tasks
-* run-api:                  Run the API Server
+* run-app:                  Run the APP Server
 * run-worker:               Run the Worker Server
 * test:                     Run all tests
 * tidy:                     Format all .go files, and Tidy and verify Go module dependencies
@@ -59,3 +59,12 @@ pending
 err
 sqlerr
 validator
+
+|                                                                           |                                                         |
+| ------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `curl -i http://localhost:9090/health/live`                               | Liveness Probe (Checks if the Go binary is running)     |
+| `curl -i http://localhost:9090/health/ready`                              | Readiness Probe (Checks Postgres and Redis connections) |
+| `curl -s http://localhost:9090/info`                                      | Build Info                                              |
+| `curl -u admin:secret -s http://localhost:9090/admin/metrics `            | Prometheus Metrics Scraper                              |
+| `curl -u admin:secret -s http://localhost:9090/admin/asynqmon/api/queues` | Asynq Dashboard (API Check)                             |
+| `curl -i -u admin:secret http://localhost:9090/admin/debug/pprof/`        | Go Profiler (pprof)                                     |
